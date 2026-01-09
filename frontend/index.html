@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Anime Watchlist</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: url("koi.gif") no-repeat center center/cover;
+            min-height: 100vh;
+            padding: 20px 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .card {
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+            border-radius: 12px;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+        }
+        .anime-card {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .anime-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+        .anime-card:hover::before {
+            left: 100%;
+        }
+        .anime-card:hover {
+            transform: translateY(-8px) scale(1.02);
+        }
+        .anime-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 8px 8px 0 0;
+        }
+        .anime-image-placeholder {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px 8px 0 0;
+            font-size: 4rem;
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .rating-stars {
+            color: #ffc107;
+            font-size: 1.2rem;
+        }
+        .header-title {
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: fadeInDown 0.8s ease;
+        }
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px 0;
+            }
+            .header-title h1 {
+                font-size: 2rem;
+            }
+            .card {
+                margin-bottom: 15px;
+            }
+        }
+        .anime-card .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.8rem;
+        }
+        .empty-state {
+            padding: 3rem;
+            text-align: center;
+        }
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+        .image-upload-label {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .image-upload-label:hover {
+            border-color: #667eea;
+            background: #e7f1ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="text-center text-white mb-4 header-title">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div></div>
+                <h1 class="display-4 fw-bold m-0"> My Anime Watchlist</h1>
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <span id="username">User</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" onclick="logout()">Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+            <p class="lead">Keep track of all your favorite anime!</p>
+        </div>
+
+        <!-- Add Anime Form -->
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Add New Anime</h3>
+                <form id="addAnimeForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="title" class="form-label">Anime Title *</label>
+                            <input type="text" class="form-control" id="title" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Status *</label>
+                            <select class="form-select" id="status" required>
+                                <option value="">Choose...</option>
+                                <option value="watching">Watching</option>
+                                <option value="completed">Completed</option>
+                                <option value="plan to watch">Plan to Watch</option>
+                                <option value="on hold">On Hold</option>
+                                <option value="dropped">Dropped</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="rating" class="form-label">Rating (1-10)</label>
+                            <input type="number" class="form-control" id="rating" min="1" max="10">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="episodes" class="form-label">Episodes Watched</label>
+                            <input type="number" class="form-control" id="episodes" min="0" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="totalEpisodes" class="form-label">Total Episodes</label>
+                            <input type="number" class="form-control" id="totalEpisodes" min="0">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Anime Cover Image</label>
+                            <div class="image-upload-label">
+                                <input type="file" class="form-control d-none" id="imageUpload" accept="image/*" onchange="previewImage(this, 'imagePreview')">
+                                <label for="imageUpload" class="m-0">
+                                    📷 Click to upload image (optional)
+                                </label>
+                            </div>
+                            <img id="imagePreview" class="image-preview d-none" alt="Preview">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Add Anime</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="filterStatus" class="form-label">Filter by Status:</label>
+                        <select class="form-select" id="filterStatus">
+                            <option value="all">All</option>
+                            <option value="watching">Watching</option>
+                            <option value="completed">Completed</option>
+                            <option value="plan to watch">Plan to Watch</option>
+                            <option value="on hold">On Hold</option>
+                            <option value="dropped">Dropped</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="searchTitle" class="form-label">Search:</label>
+                        <input type="text" class="form-control" id="searchTitle" placeholder="Search anime...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anime List -->
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">My Anime List</h3>
+                <div id="animeList" class="row g-3">
+                    <!-- Anime cards will be inserted here -->
+                </div>
+                <div id="emptyMessage" class="text-center text-muted py-5" style="display: none;">
+                    <p>No anime found. Add your first anime above!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Anime</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editAnimeForm">
+                        <input type="hidden" id="editId">
+                        <div class="mb-3">
+                            <label for="editTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="editTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editStatus" class="form-label">Status</label>
+                            <select class="form-select" id="editStatus" required>
+                                <option value="watching">Watching</option>
+                                <option value="completed">Completed</option>
+                                <option value="plan to watch">Plan to Watch</option>
+                                <option value="on hold">On Hold</option>
+                                <option value="dropped">Dropped</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editRating" class="form-label">Rating (1-10)</label>
+                            <input type="number" class="form-control" id="editRating" min="1" max="10">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editEpisodes" class="form-label">Episodes Watched</label>
+                            <input type="number" class="form-control" id="editEpisodes" min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTotalEpisodes" class="form-label">Total Episodes</label>
+                            <input type="number" class="form-control" id="editTotalEpisodes" min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Update Cover Image</label>
+                            <div class="image-upload-label">
+                                <input type="file" class="form-control d-none" id="editImageUpload" accept="image/*" onchange="previewImage(this, 'editImagePreview')">
+                                <label for="editImageUpload" class="m-0">
+                                    📷 Click to change image (optional)
+                                </label>
+                            </div>
+                            <img id="editImagePreview" class="image-preview d-none" alt="Preview">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const API_URL = 'http://localhost:5500/api/media';
+        const IMAGE_URL = 'http://localhost:5500/uploads/';
+        
+        let allAnime = [];
+        let editModal;
+        let authToken = localStorage.getItem('token');
+        let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+
+        // Check if user is logged in
+        if (!authToken) {
+            window.location.href = 'login.html';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            editModal = new bootstrap.Modal(document.getElementById('editModal'));
+            
+            // Display username
+            if (currentUser) {
+                document.getElementById('username').textContent = currentUser.username;
+            }
+            
+            loadAnime();
+            
+            // Add form submit
+            document.getElementById('addAnimeForm').addEventListener('submit', addAnime);
+            
+            // Filter and search
+            document.getElementById('filterStatus').addEventListener('change', filterAnime);
+            document.getElementById('searchTitle').addEventListener('input', filterAnime);
+        });
+
+        // Preview image before upload
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('d-none');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        // Load all anime from backend
+        async function loadAnime() {
+            try {
+                const response = await fetch(API_URL, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                allAnime = await response.json();
+                displayAnime(allAnime);
+            } catch (error) {
+                console.error('Error loading anime:', error);
+                alert('Failed to load anime list. Make sure your backend is running!');
+            }
+        }
+
+        // Display anime cards
+        function displayAnime(animeList) {
+            const animeListDiv = document.getElementById('animeList');
+            const emptyMessage = document.getElementById('emptyMessage');
+            
+            if (animeList.length === 0) {
+                animeListDiv.innerHTML = '';
+                emptyMessage.style.display = 'block';
+                return;
+            }
+            
+            emptyMessage.style.display = 'none';
+            
+            animeListDiv.innerHTML = animeList.map(anime => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card anime-card h-100">
+                        ${anime.image ? 
+                            `<img src="${IMAGE_URL}${anime.image}" class="anime-image" alt="${anime.title}">` :
+                            `<div class="anime-image-placeholder">🎌</div>`
+                        }
+                        <div class="card-body">
+                            <h5 class="card-title">${anime.title}</h5>
+                            <p class="mb-2">
+                                <span class="badge ${getStatusColor(anime.status)} status-badge">
+                                    ${anime.status.toUpperCase()}
+                                </span>
+                            </p>
+                            ${anime.rating ? `
+                                <p class="mb-2">
+                                    <span class="rating-stars">★</span> ${anime.rating}/10
+                                </p>
+                            ` : ''}
+                            <p class="mb-2 text-muted small">
+                                Episodes: ${anime.episodes_watched || 0}${anime.total_episodes ? `/${anime.total_episodes}` : ''}
+                            </p>
+                            ${anime.notes ? `
+                                <p class="mb-2 text-muted small">
+                                    ${anime.notes}
+                                </p>
+                            ` : ''}
+                            <div class="d-flex gap-2 mt-3">
+                                <button class="btn btn-sm btn-outline-primary" onclick="openEditModal('${anime._id}')">
+                                    Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteAnime('${anime._id}')">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Get badge color based on status
+        function getStatusColor(status) {
+            const colors = {
+                'watching': 'bg-primary',
+                'completed': 'bg-success',
+                'plan to watch': 'bg-info',
+                'on hold': 'bg-warning',
+                'dropped': 'bg-secondary'
+            };
+            return colors[status] || 'bg-secondary';
+        }
+
+        // Add new anime
+        async function addAnime(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('title', document.getElementById('title').value);
+            formData.append('type', 'anime');
+            formData.append('status', document.getElementById('status').value);
+            formData.append('rating', document.getElementById('rating').value || '');
+            formData.append('episodes_watched', document.getElementById('episodes').value || 0);
+            formData.append('total_episodes', document.getElementById('totalEpisodes').value || '');
+            
+            const imageFile = document.getElementById('imageUpload').files[0];
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    document.getElementById('addAnimeForm').reset();
+                    document.getElementById('imagePreview').classList.add('d-none');
+                    loadAnime();
+                    alert('Anime added successfully!');
+                } else {
+                    const error = await response.json();
+                    alert('Failed to add anime: ' + error.message);
+                }
+            } catch (error) {
+                console.error('Error adding anime:', error);
+                alert('Failed to add anime!');
+            }
+        }
+
+        // Open edit modal
+        function openEditModal(id) {
+            const anime = allAnime.find(a => a._id === id);
+            if (!anime) return;
+            
+            document.getElementById('editId').value = anime._id;
+            document.getElementById('editTitle').value = anime.title;
+            document.getElementById('editStatus').value = anime.status;
+            document.getElementById('editRating').value = anime.rating || '';
+            document.getElementById('editEpisodes').value = anime.episodes_watched || 0;
+            document.getElementById('editTotalEpisodes').value = anime.total_episodes || '';
+            
+            // Show current image if exists
+            const editPreview = document.getElementById('editImagePreview');
+            if (anime.image) {
+                editPreview.src = IMAGE_URL + anime.image;
+                editPreview.classList.remove('d-none');
+            } else {
+                editPreview.classList.add('d-none');
+            }
+            
+            editModal.show();
+        }
+
+        // Save edit
+        async function saveEdit() {
+            const id = document.getElementById('editId').value;
+            
+            const formData = new FormData();
+            formData.append('title', document.getElementById('editTitle').value);
+            formData.append('type', 'anime');
+            formData.append('status', document.getElementById('editStatus').value);
+            formData.append('rating', document.getElementById('editRating').value || '');
+            formData.append('episodes_watched', document.getElementById('editEpisodes').value || 0);
+            formData.append('total_episodes', document.getElementById('editTotalEpisodes').value || '');
+            
+            const imageFile = document.getElementById('editImageUpload').files[0];
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    editModal.hide();
+                    document.getElementById('editImageUpload').value = '';
+                    loadAnime();
+                    alert('Anime updated successfully!');
+                }
+            } catch (error) {
+                console.error('Error updating anime:', error);
+                alert('Failed to update anime!');
+            }
+        }
+
+        // Delete anime
+        async function deleteAnime(id) {
+            if (!confirm('Are you sure you want to delete this anime?')) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    loadAnime();
+                    alert('Anime deleted successfully!');
+                }
+            } catch (error) {
+                console.error('Error deleting anime:', error);
+                alert('Failed to delete anime!');
+            }
+        }
+
+        // Filter anime
+        function filterAnime() {
+            const statusFilter = document.getElementById('filterStatus').value;
+            const searchTerm = document.getElementById('searchTitle').value.toLowerCase();
+            
+            let filtered = allAnime;
+            
+            // Filter by status
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(anime => anime.status === statusFilter);
+            }
+            
+            // Filter by search term
+            if (searchTerm) {
+                filtered = filtered.filter(anime => 
+                    anime.title.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            displayAnime(filtered);
+        }
+    </script>
+</body>
+</html>
